@@ -178,7 +178,7 @@ class MatrixClustered:
 	def get_features_selected_flat(self):
 		fs=self.get_features_selected()
 		fs_flat=[item for sublist in fs for item in sublist]
-		return fs_flat
+		return set(fs_flat)
 	
 	def get_rows_number(self):
 		"""
