@@ -78,7 +78,7 @@ class MatrixClustered:
 		"""
 		Get the sum of cluster i
 		Used in feature recall
-    	"""
+    	"""   	
 		cluster=self.clusters[i]
 		sum=0
 		for row in cluster:
@@ -170,11 +170,15 @@ class MatrixClustered:
 				selected=[]
 				for j in range(self.get_cols_number()):
 					ff=self.ff(j, k)
-					print "ff",ff
 					if ff >= self.ff_mean(j) and ff >= self.ff_mean_all():
 						selected.append(j)
 				self.features_selected.append(selected)
 		return self.features_selected
+	
+	def get_features_selected_flat(self):
+		fs=self.get_features_selected()
+		fs_flat=[item for sublist in fs for item in sublist]
+		return fs_flat
 	
 	def get_rows_number(self):
 		"""
@@ -194,7 +198,37 @@ class MatrixClustered:
     	"""
 		return len(self.clusters)
 	
+	def get_cluster_of(self, i):
+		return int(self.clustering[i])
 	
+	def contrast_and_select_features(self, vector, k):
+		'''
+		Applies contrast and feature selection to a data vector supposed to belong to cluster k
+		'''
+		fs=self.get_features_selected_flat()
+		new_vector=[]
+		for j, elmt in enumerate(vector):
+			if j in fs:
+				new_vector.append(float(self.contrast(j, k) * elmt))
+		return new_vector
+		
+	def contrast_and_select_matrix(self):
+		'''
+		Applies contrast and feature selection to a data vector supposed to belong to cluster k
+		'''
+		matrix=[]
+		for i in range(self.get_rows_number()):
+			matrix.append(self.contrast_and_select_features(self.matrix_csr.getrow(i).toarray()[0], self.get_cluster_of(i)))
+		return matrix
+			
+	def contrast_a_vector(self, vector, k):
+		'''
+		Applies contrast to a data vector supposed to belong to cluster k
+		'''
+		new_vector=[]
+		for j in vector:
+			new_vector.append(self.contrast(j, k) * vector[j])
+		return new_vector
 
 	def __str__(self):
 		"""

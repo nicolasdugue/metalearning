@@ -45,3 +45,7 @@ for idx, list_features in enumerate(obj.get_features_selected()):
 	print "cluster ", idx
 	for f in list_features:
 		print obj.get_col_label(f)
+		
+print obj.get_features_selected_flat()
+
+print obj.contrast_and_select_matrix()
