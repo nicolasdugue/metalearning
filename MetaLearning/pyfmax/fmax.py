@@ -236,3 +236,42 @@ class MatrixClustered:
     		"""
 		return "Matrix CSR (ordered by rows) :\n" + str(self.matrix_csr)+ "\nMatrix CSC (ordered by columns): \n"+ str(self.matrix_csc) + "\nColumns labels (features) " + str(self.labels_col) + "\nRows labels (objects) " + str(self.labels_row) + "\nClustering :  " + str(self.clustering)+"\nClusters : "+str(self.clusters)
 		
+		
+from sklearn.cross_validation import train_test_split
+
+class MetaLearner:
+	def __init__(self, X, Y, labels_row=[], labels_col=[], perct_test=0.25):
+		'''
+		X the matrix of data, Y the classes
+		'''
+		self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(X, Y, test_size=perct_test)
+		self.matrix=MatrixClustered(self.X_train, self.Y_train, labels_row, labels_col)
+		self.matrix_contrasted=self.matrix.contrast_and_select_matrix()
+		
+	def train(self, contrasted_bool, classifier):
+		'''
+		contrasted_bool allows to use or not feature selection process
+		classifier should be a scikit learn classifier
+		'''
+		self.contrasted_bool=contrasted_bool
+		if not contrasted_bool:
+			self.classifier=classifier.fit(self.X_train, self.Y_train)
+		else:
+			self.classifier=classifier.fit(self.matrix_contrasted, self.Y_train)
+	
+	def predict(self):
+		if not self.contrasted_bool:
+			self.Y_predicted=self.classifier.predict(self.X_test)
+		else:
+			self.Y_predicted=[]
+			for idx,vector in enumerate(self.X_test):
+				best=0
+				maxi=-1
+				for k in range(self.matrix.get_clusters_number()):
+					vector_contrasted=self.matrix.contrast_and_select_features(vector, k)
+					prediction=self.classifier.predict_proba(vector_contrasted)
+					if prediction[0][k] > maxi:
+						maxi=prediction[0][k]
+						best=k
+				self.Y_predicted.append(best)
+		return(self.Y_predicted == self.Y_test)
