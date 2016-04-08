@@ -84,6 +84,9 @@ class MatrixClustered:
 		return sum
 	
 	def fp(self, j, k):
+		"""
+		Get the feature precision (or predominance) of feature j in cluster k
+    	"""
 		numerator=self.sum_col_of_cluster(j, k)
 		denominator =self.sum_cluster(k)
 		if denominator == 0:
@@ -92,6 +95,9 @@ class MatrixClustered:
 			return numerator / denominator
 		
 	def fr(self, j, k):
+		"""
+		Get the feature recall of feature j in cluster k
+    	"""
 		numerator=self.sum_col_of_cluster(j, k)
 		denominator =self.sum_col(j)
 		if denominator == 0:
@@ -100,6 +106,9 @@ class MatrixClustered:
 			return numerator / denominator
 	
 	def ff(self, j, k):
+		"""
+		Get the feature f measure of feature j in cluster k
+    	"""
 		fr=self.fr(j,k)
 		fp=self.fp(j,k)
 		if fr == 0 and fp == 0:
@@ -108,13 +117,25 @@ class MatrixClustered:
 			return (2*fr*fp) /(fr + fp) 
 		
 	def ff_mean(self, j):
+		"""
+		Get the mean value of feature f-measure for feature j across all clusters
+    	"""
 		mean=0
 		for k in range(len(self.clusters)):
 			mean+=self.ff(j,k)
 		self.ffmean[j]=mean / len(self.clusters)
 		return self.ffmean[j]
 	
+	def contrast(self, j,k):
+		"""
+		Get the contrast of feature j in cluster k
+    	"""
+		return self.ff(j, k) / self.ff_mean(j)
+	
 	def ff_mean_all(self):
+		"""
+		Get the mean value of feature f-measure for all features
+    	"""
 		mean=0
 		for j in range(self.get_cols_number()):
 			if (self.ffmean[j] == -1):
@@ -124,21 +145,33 @@ class MatrixClustered:
 			
 		
 	def get_row_label(self, i):
+		"""
+		Get the label of row i
+    	"""
 		if len(self.labels_row) == len(self.clustering):
 			return self.labels_row[i]
 		else:
 			return i+""
 		
 	def get_col_label(self, j):
+		"""
+		Get the label of col j
+    	"""
 		if len(self.labels_col) > 0:
 			return self.labels_col[j]
 		else:
 			return j+""
 	
 	def get_rows_number(self):
+		"""
+		Get the number of rows
+    	"""
 		return self.matrix_csr.shape[0]
 	
 	def get_cols_number(self):
+		"""
+		Get the number of cols
+    	"""
 		return self.matrix_csr.shape[1]
 
 	def __str__(self):
