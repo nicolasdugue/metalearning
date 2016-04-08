@@ -30,5 +30,18 @@ print obj.ff(2,1)
 print obj.ff_mean(0)
 print obj.ff_mean(1)
 print obj.ff_mean(2)
-
 print obj.ff_mean_all()
+
+
+print obj.contrast(0, 0)
+print obj.contrast(0, 1)
+print obj.contrast(1, 0)
+print obj.contrast(1, 1)
+print obj.contrast(2,0)
+print obj.contrast(2,1)
+
+
+for idx, list_features in enumerate(obj.get_features_selected()):
+	print "cluster ", idx
+	for f in list_features:
+		print obj.get_col_label(f)

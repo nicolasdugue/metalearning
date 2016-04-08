@@ -44,6 +44,8 @@ class MatrixClustered:
 		self.ffmean=np.empty(self.matrix_csr.shape[1])
 		self.ffmean.fill(-1.0)
 		
+		self.features_selected=[]
+		
 
 		
 
@@ -161,6 +163,18 @@ class MatrixClustered:
 			return self.labels_col[j]
 		else:
 			return j+""
+		
+	def get_features_selected(self):
+		if len(self.features_selected) == 0:
+			for k in range(self.get_clusters_number()):
+				selected=[]
+				for j in range(self.get_cols_number()):
+					ff=self.ff(j, k)
+					print "ff",ff
+					if ff >= self.ff_mean(j) and ff >= self.ff_mean_all():
+						selected.append(j)
+				self.features_selected.append(selected)
+		return self.features_selected
 	
 	def get_rows_number(self):
 		"""
@@ -173,6 +187,14 @@ class MatrixClustered:
 		Get the number of cols
     	"""
 		return self.matrix_csr.shape[1]
+	
+	def get_clusters_number(self):
+		"""
+		Get the number of cols
+    	"""
+		return len(self.clusters)
+	
+	
 
 	def __str__(self):
 		"""
