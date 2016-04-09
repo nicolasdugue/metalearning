@@ -256,11 +256,13 @@ class MetaLearner:
 		self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(X, Y, test_size=perct_test)
 		logger = logging.getLogger()
 		logger.setLevel(20)
+		self.contrasted_bool=False
 		logging.info("Dataset split in train and test sets")
 		logging.info("Train set : " + str(len(self.X_train)))
 		logging.info("Test set : " + str(len(self.X_test)))
 		self.matrix=MatrixClustered(self.X_train, self.Y_train, labels_row, labels_col)
-		self.matrix_contrasted=np.array(self.matrix.contrast_and_select_matrix()).reshape(-1,self.matrix.get_cols_number())
+		self.matrix_contrasted=self.matrix.contrast_and_select_matrix()
+		self.matrix_contrasted=np.array(self.matrix_contrasted).reshape(-1,len(self.matrix.get_features_selected_flat()))
 		
 	def get_original_train(self):
 		return self.X_train
@@ -283,6 +285,7 @@ class MetaLearner:
 			self.classifier=classifier.fit(self.matrix_contrasted, self.Y_train)
 	
 	def predict(self):
+		print ("Contrast : "+ str(self.contrasted_bool))
 		if not self.contrasted_bool:
 			self.Y_predicted=self.classifier.predict(self.X_test)
 		else:
@@ -312,18 +315,20 @@ class MetaLearner:
 		plt.xlabel("1st eigenvector")
 		plt.ylabel("2nd eigenvector")
 		
-		# To getter a better understanding of interaction of the dimensions
-		# plot the first three PCA dimensions
-		fig = plt.figure(1, figsize=(8, 6))
-		ax = Axes3D(fig, elev=-150, azim=110)
-		X_reduced = PCA(n_components=3).fit_transform(X)
-		ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=self.get_train_classes(), cmap= plt.cm.get_cmap('RdYlBu'))
-		ax.set_title("First three PCA directions")
-		ax.set_xlabel("1st eigenvector")
-		ax.w_xaxis.set_ticklabels([])
-		ax.set_ylabel("2nd eigenvector")
-		ax.w_yaxis.set_ticklabels([])
-		ax.set_zlabel("3rd eigenvector")
-		ax.w_zaxis.set_ticklabels([])
+		if (len(self.matrix.get_features_selected_flat())>2):
+		
+			# To getter a better understanding of interaction of the dimensions
+			# plot the first three PCA dimensions
+			fig = plt.figure(1, figsize=(8, 6))
+			ax = Axes3D(fig, elev=-150, azim=110)
+			X_reduced = PCA(n_components=3).fit_transform(X)
+			ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=self.get_train_classes(), cmap= plt.cm.get_cmap('RdYlBu'))
+			ax.set_title("First three PCA directions")
+			ax.set_xlabel("1st eigenvector")
+			ax.w_xaxis.set_ticklabels([])
+			ax.set_ylabel("2nd eigenvector")
+			ax.w_yaxis.set_ticklabels([])
+			ax.set_zlabel("3rd eigenvector")
+			ax.w_zaxis.set_ticklabels([])
 		
 		plt.show()
