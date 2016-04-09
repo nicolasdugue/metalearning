@@ -3,6 +3,7 @@
 
 from scipy.sparse import csr_matrix, csc_matrix
 import numpy as np
+import logging
 
 class MatrixClustered:
 	"""
@@ -237,7 +238,15 @@ class MatrixClustered:
 		return "Matrix CSR (ordered by rows) :\n" + str(self.matrix_csr)+ "\nMatrix CSC (ordered by columns): \n"+ str(self.matrix_csc) + "\nColumns labels (features) " + str(self.labels_col) + "\nRows labels (objects) " + str(self.labels_row) + "\nClustering :  " + str(self.clustering)+"\nClusters : "+str(self.clusters)
 		
 		
+#For Dataset splitting
 from sklearn.cross_validation import train_test_split
+#For logging
+import logging
+#For PCA
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn import datasets
+from sklearn.decomposition import PCA
 
 class MetaLearner:
 	def __init__(self, X, Y, labels_row=[], labels_col=[], perct_test=0.25):
@@ -245,9 +254,23 @@ class MetaLearner:
 		X the matrix of data, Y the classes
 		'''
 		self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(X, Y, test_size=perct_test)
+		logger = logging.getLogger()
+		logger.setLevel(20)
+		logging.info("Dataset split in train and test sets")
+		logging.info("Train set : " + str(len(self.X_train)))
+		logging.info("Test set : " + str(len(self.X_test)))
 		self.matrix=MatrixClustered(self.X_train, self.Y_train, labels_row, labels_col)
-		self.matrix_contrasted=self.matrix.contrast_and_select_matrix()
+		self.matrix_contrasted=np.array(self.matrix.contrast_and_select_matrix()).reshape(-1,self.matrix.get_cols_number())
 		
+	def get_original_train(self):
+		return self.X_train
+	
+	def get_contrasted_train(self):
+		return self.matrix_contrasted
+	
+	def get_train_classes(self):
+		return self.Y_train
+	
 	def train(self, contrasted_bool, classifier):
 		'''
 		contrasted_bool allows to use or not feature selection process
@@ -275,3 +298,32 @@ class MetaLearner:
 						best=k
 				self.Y_predicted.append(best)
 		return(self.Y_predicted == self.Y_test)
+	
+	def pca(self, contrasted_bool):
+		if contrasted_bool:
+			X=self.get_contrasted_train()
+		else:
+			X=self.get_original_train()
+		
+		# Plot the training points
+		fig = plt.figure(2, figsize=(8, 6))
+		X_reduced = PCA(n_components=2).fit_transform(X)
+		plt.scatter(X_reduced[:, 0], X_reduced[:, 1], c=self.get_train_classes(), cmap= plt.cm.get_cmap('RdYlBu'))
+		plt.xlabel("1st eigenvector")
+		plt.ylabel("2nd eigenvector")
+		
+		# To getter a better understanding of interaction of the dimensions
+		# plot the first three PCA dimensions
+		fig = plt.figure(1, figsize=(8, 6))
+		ax = Axes3D(fig, elev=-150, azim=110)
+		X_reduced = PCA(n_components=3).fit_transform(X)
+		ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=self.get_train_classes(), cmap= plt.cm.get_cmap('RdYlBu'))
+		ax.set_title("First three PCA directions")
+		ax.set_xlabel("1st eigenvector")
+		ax.w_xaxis.set_ticklabels([])
+		ax.set_ylabel("2nd eigenvector")
+		ax.w_yaxis.set_ticklabels([])
+		ax.set_zlabel("3rd eigenvector")
+		ax.w_zaxis.set_ticklabels([])
+		
+		plt.show()
