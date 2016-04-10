@@ -299,7 +299,9 @@ class MetaLearner:
 					if prediction[0][k] > maxi:
 						maxi=prediction[0][k]
 						best=k
+					#print prediction, k, maxi, best, self.Y_test[idx]
 				self.Y_predicted.append(best)
+				#print "\n"
 		return(self.Y_predicted == self.Y_test)
 	
 	def pca(self, contrasted_bool):
