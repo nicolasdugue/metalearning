@@ -166,6 +166,9 @@ class MatrixClustered:
 			return j+""
 		
 	def get_features_selected(self):
+		'''
+		Return for each cluster the set of features selected
+		'''
 		if len(self.features_selected) == 0:
 			for k in range(self.get_clusters_number()):
 				selected=[]
@@ -177,6 +180,9 @@ class MatrixClustered:
 		return self.features_selected
 	
 	def get_features_selected_flat(self):
+		'''
+		Return an array of the feactures selected for the whole dataset, namely all the classes
+		'''
 		fs=self.get_features_selected()
 		fs_flat=[item for sublist in fs for item in sublist]
 		return set(fs_flat)
@@ -200,6 +206,9 @@ class MatrixClustered:
 		return len(self.clusters)
 	
 	def get_cluster_of(self, i):
+		'''
+		Get cluster of object i
+		'''
 		return int(self.clustering[i])
 	
 	def contrast_and_select_features(self, vector, k):
@@ -212,10 +221,19 @@ class MatrixClustered:
 			if j in fs:
 				new_vector.append(float(self.contrast(j, k) * elmt))
 		return new_vector
+	
+	def contrast_and_select_features_matrix(self, matrix, classes):
+		'''
+		Applies contrast and feature selection to a data matrix
+		'''
+		result=[]
+		for idx,vector in enumerate(matrix):
+			result.append(self.contrast_and_select_features(vector, int(classes[idx])))
+		return result
 		
 	def contrast_and_select_matrix(self):
 		'''
-		Applies contrast and feature selection to a data vector supposed to belong to cluster k
+		Applies contrast and feature selection to the current matrix
 		'''
 		matrix=[]
 		for i in range(self.get_rows_number()):
@@ -254,6 +272,7 @@ class MetaLearner:
 		X the matrix of data, Y the classes
 		'''
 		self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(X, Y, test_size=perct_test)
+		self.Y_error=[]
 		logger = logging.getLogger()
 		logger.setLevel(20)
 		self.contrasted_bool=False
@@ -265,13 +284,40 @@ class MetaLearner:
 		self.matrix_contrasted=np.array(self.matrix_contrasted).reshape(-1,len(self.matrix.get_features_selected_flat()))
 		
 	def get_original_train(self):
+		'''
+		Get the original train data : data are not contrasted
+		'''
 		return self.X_train
 	
 	def get_contrasted_train(self):
+		'''
+		Return the train set contrasted
+		'''
 		return self.matrix_contrasted
 	
 	def get_train_classes(self):
+		'''
+		Return the train classes
+		'''
 		return self.Y_train
+	
+	def get_original_matrix(self):
+		'''
+		Return the original data without any contrast applied, and before split in train and test
+		'''
+		return np.array(np.append(self.X_train,self.X_test)).reshape(-1,len(self.X_train[0,:]))
+	
+	def get_contrasted_original_matrix(self):
+		'''
+		Return the original data without any contrast applied, and before split in train and test
+		'''
+		return self.matrix.contrast_and_select_features_matrix(self.get_original_matrix(), self.get_classes())
+	
+	def get_classes(self):
+		'''
+		Get classes for the whole dataset
+		'''
+		return np.append(self.Y_train, self.Y_test)
 	
 	def train(self, contrasted_bool, classifier):
 		'''
@@ -285,10 +331,15 @@ class MetaLearner:
 			self.classifier=classifier.fit(self.matrix_contrasted, self.Y_train)
 	
 	def predict(self):
+		'''
+		predict results using the trained classifier with train function
+		'''
 		print ("Contrast : "+ str(self.contrasted_bool))
+		
 		if not self.contrasted_bool:
 			self.Y_predicted=self.classifier.predict(self.X_test)
 		else:
+			
 			self.Y_predicted=[]
 			for idx,vector in enumerate(self.X_test):
 				best=0
@@ -300,11 +351,16 @@ class MetaLearner:
 						maxi=prediction[0][k]
 						best=k
 					#print prediction, k, maxi, best, self.Y_test[idx]
+				if (self.Y_test[idx] != best):
+					self.Y_error.append(idx)
 				self.Y_predicted.append(best)
 				#print "\n"
 		return(self.Y_predicted == self.Y_test)
 	
-	def pca(self, contrasted_bool):
+	def pca_train(self, contrasted_bool):
+		'''
+		Allows to run a pca on train data
+		'''
 		if contrasted_bool:
 			X=self.get_contrasted_train()
 		else:
@@ -334,3 +390,43 @@ class MetaLearner:
 			ax.w_zaxis.set_ticklabels([])
 		
 		plt.show()
+
+	def pca_dataset(self, contrasted_bool, error_bool=False):
+		'''
+		Allows to run data on the whole dataset
+		If error_bool is True, classification errors will be colored differently
+		'''
+		if contrasted_bool:
+			X=self.get_contrasted_original_matrix()
+		else:
+			X=self.get_original_matrix()
+		classes=self.get_classes()
+		if error_bool:
+			for idx in self.Y_error:
+				classes[idx+len(self.X_train)]=len(self.matrix.get_features_selected_flat())
+		
+		# Plot the training points
+		fig = plt.figure(2, figsize=(8, 6))
+		X_reduced = PCA(n_components=2).fit_transform(X)
+		plt.scatter(X_reduced[:, 0], X_reduced[:, 1], c=classes, cmap= plt.cm.get_cmap('RdYlBu'))
+		plt.xlabel("1st eigenvector")
+		plt.ylabel("2nd eigenvector")
+		
+		if (len(self.matrix.get_features_selected_flat())>2):
+		
+			# To getter a better understanding of interaction of the dimensions
+			# plot the first three PCA dimensions
+			fig = plt.figure(1, figsize=(8, 6))
+			ax = Axes3D(fig, elev=-150, azim=110)
+			X_reduced = PCA(n_components=3).fit_transform(X)
+			ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=classes, cmap= plt.cm.get_cmap('RdYlBu'))
+			ax.set_title("First three PCA directions")
+			ax.set_xlabel("1st eigenvector")
+			ax.w_xaxis.set_ticklabels([])
+			ax.set_ylabel("2nd eigenvector")
+			ax.w_yaxis.set_ticklabels([])
+			ax.set_zlabel("3rd eigenvector")
+			ax.w_zaxis.set_ticklabels([])
+		
+		plt.show()
+		

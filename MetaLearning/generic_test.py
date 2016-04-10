@@ -18,15 +18,15 @@ matrix_iris=np.loadtxt("../data/iris/iris.data")
 classes=matrix_iris[:,4]
 matrix_iris=matrix_iris[:,0:3]
 
-metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.5)
-metalearner.train(False, lr)
-results=metalearner.predict()
-print "Correct results (no contrast) : ",reduce(lambda x, y : int(x) +int(y), results )
-
-metalearner.train(True, lr)
-results=metalearner.predict()
-print "Correct results (with contrast) : ", reduce(lambda x, y : int(x) +int(y), results )
-#metalearner.pca(False)
+# metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.5)
+# metalearner.train(False, lr)
+# results=metalearner.predict()
+# print "Correct results (no contrast) : ",reduce(lambda x, y : int(x) +int(y), results )
+# 
+# metalearner.train(True, lr)
+# results=metalearner.predict()
+# print "Correct results (with contrast) : ", reduce(lambda x, y : int(x) +int(y), results )
+#metalearner.pca_train(False)
 
 #Now we test by keeping the two closest classes, the two that are particularly difficult to discriminate from each other
 classe1=classes == 1
@@ -43,4 +43,4 @@ print "Correct results (no contrast) : ",reduce(lambda x, y : int(x) +int(y), re
 metalearner.train(True, lr)
 results=metalearner.predict()
 print "Correct results (with contrast) : ", reduce(lambda x, y : int(x) +int(y), results )
-metalearner.pca(True)
+metalearner.pca_dataset(True, True)
