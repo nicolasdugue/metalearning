@@ -10,14 +10,18 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.lda import LDA
 from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
 import numpy as np
 import pyfmax.fmax as fm
 
-lr = SVC(probability=True)
+#lr = SVC(probability=True)
+lr=LogisticRegression()
+norm=StandardScaler()
 
 matrix_iris=np.loadtxt("../data/iris/iris.data")
 classes=matrix_iris[:,4]
 matrix_iris=matrix_iris[:,0:3]
+matrix_iris=norm.fit_transform(matrix_iris)
 
 # metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.5)
 # metalearner.train(False, lr)
@@ -36,7 +40,7 @@ classes1and2=classe1+classe2
 matrix_iris=matrix_iris[classes1and2]
 classes=classes[classes1and2] - 1
 
-metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.3, magnitude=3)
+metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.1, magnitude=3)
 metalearner.train(False, lr)
 results=metalearner.predict()
 print "Correct results (no contrast) : ",reduce(lambda x, y : int(x) +int(y), results )
