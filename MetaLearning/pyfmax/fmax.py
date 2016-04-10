@@ -3,7 +3,7 @@
 
 from scipy.sparse import csr_matrix, csc_matrix
 import numpy as np
-import logging
+from math import pow
 
 class MatrixClustered:
 	"""
@@ -69,11 +69,11 @@ class MatrixClustered:
 		Used in Feature Precision (Predominance)
     		"""
 		column=self.matrix_csc.getcol(j).toarray();
-		sum=0
+		som=0
 		for idx,elmt in enumerate(column):
 			if (self.clustering[idx] == k):
-				sum+=elmt
-		return sum	
+				som+=elmt
+		return som	
 	
 	def sum_cluster(self, i):
 		"""
@@ -81,10 +81,10 @@ class MatrixClustered:
 		Used in feature recall
     	"""   	
 		cluster=self.clusters[i]
-		sum=0
+		som=0
 		for row in cluster:
-			sum+=self.sum_row(row)
-		return sum
+			som+=self.sum_row(row)
+		return som
 	
 	def fp(self, j, k):
 		"""
@@ -211,7 +211,7 @@ class MatrixClustered:
 		'''
 		return int(self.clustering[i])
 	
-	def contrast_and_select_features(self, vector, k):
+	def contrast_and_select_features(self, vector, k, magnitude=1):
 		'''
 		Applies contrast and feature selection to a data vector supposed to belong to cluster k
 		'''
@@ -219,25 +219,25 @@ class MatrixClustered:
 		new_vector=[]
 		for j, elmt in enumerate(vector):
 			if j in fs:
-				new_vector.append(float(self.contrast(j, k) * elmt))
+				new_vector.append(float(pow(self.contrast(j, k), magnitude) * elmt))
 		return new_vector
 	
-	def contrast_and_select_features_matrix(self, matrix, classes):
+	def contrast_and_select_features_matrix(self, matrix, classes, magnitude=1):
 		'''
 		Applies contrast and feature selection to a data matrix
 		'''
 		result=[]
 		for idx,vector in enumerate(matrix):
-			result.append(self.contrast_and_select_features(vector, int(classes[idx])))
+			result.append(self.contrast_and_select_features(vector, int(classes[idx]), magnitude))
 		return result
 		
-	def contrast_and_select_matrix(self):
+	def contrast_and_select_matrix(self, magnitude=1):
 		'''
 		Applies contrast and feature selection to the current matrix
 		'''
 		matrix=[]
 		for i in range(self.get_rows_number()):
-			matrix.append(self.contrast_and_select_features(self.matrix_csr.getrow(i).toarray()[0], self.get_cluster_of(i)))
+			matrix.append(self.contrast_and_select_features(self.matrix_csr.getrow(i).toarray()[0], self.get_cluster_of(i), magnitude))
 		return matrix
 			
 	def contrast_a_vector(self, vector, k):
@@ -254,8 +254,11 @@ class MatrixClustered:
 		toString()
     		"""
 		return "Matrix CSR (ordered by rows) :\n" + str(self.matrix_csr)+ "\nMatrix CSC (ordered by columns): \n"+ str(self.matrix_csc) + "\nColumns labels (features) " + str(self.labels_col) + "\nRows labels (objects) " + str(self.labels_row) + "\nClustering :  " + str(self.clustering)+"\nClusters : "+str(self.clusters)
+	
+	
+	
 		
-		
+	
 #For Dataset splitting
 from sklearn.cross_validation import train_test_split
 #For logging
@@ -263,16 +266,16 @@ import logging
 #For PCA
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from sklearn import datasets
 from sklearn.decomposition import PCA
 
 class MetaLearner:
-	def __init__(self, X, Y, labels_row=[], labels_col=[], perct_test=0.25):
+	def __init__(self, X, Y, labels_row=[], labels_col=[], perct_test=0.25, magnitude=1):
 		'''
 		X the matrix of data, Y the classes
 		'''
 		self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(X, Y, test_size=perct_test)
 		self.Y_error=[]
+		self.magnitude=magnitude
 		logger = logging.getLogger()
 		logger.setLevel(20)
 		self.contrasted_bool=False
@@ -280,7 +283,7 @@ class MetaLearner:
 		logging.info("Train set : " + str(len(self.X_train)))
 		logging.info("Test set : " + str(len(self.X_test)))
 		self.matrix=MatrixClustered(self.X_train, self.Y_train, labels_row, labels_col)
-		self.matrix_contrasted=self.matrix.contrast_and_select_matrix()
+		self.matrix_contrasted=self.matrix.contrast_and_select_matrix(self.magnitude)
 		self.matrix_contrasted=np.array(self.matrix_contrasted).reshape(-1,len(self.matrix.get_features_selected_flat()))
 		
 	def get_original_train(self):
@@ -311,7 +314,7 @@ class MetaLearner:
 		'''
 		Return the original data without any contrast applied, and before split in train and test
 		'''
-		return self.matrix.contrast_and_select_features_matrix(self.get_original_matrix(), self.get_classes())
+		return self.matrix.contrast_and_select_features_matrix(self.get_original_matrix(), self.get_classes(), self.magnitude)
 	
 	def get_classes(self):
 		'''
@@ -345,7 +348,7 @@ class MetaLearner:
 				best=0
 				maxi=-1
 				for k in range(self.matrix.get_clusters_number()):
-					vector_contrasted=self.matrix.contrast_and_select_features(vector, k)
+					vector_contrasted=self.matrix.contrast_and_select_features(vector, k, self.magnitude)
 					prediction=self.classifier.predict_proba(vector_contrasted)
 					if prediction[0][k] > maxi:
 						maxi=prediction[0][k]

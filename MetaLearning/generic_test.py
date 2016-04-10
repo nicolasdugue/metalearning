@@ -9,10 +9,11 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.lda import LDA
+from sklearn.svm import SVC
 import numpy as np
 import pyfmax.fmax as fm
 
-lr = LogisticRegression()
+lr = SVC(probability=True)
 
 matrix_iris=np.loadtxt("../data/iris/iris.data")
 classes=matrix_iris[:,4]
@@ -35,7 +36,7 @@ classes1and2=classe1+classe2
 matrix_iris=matrix_iris[classes1and2]
 classes=classes[classes1and2] - 1
 
-metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.3)
+metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.3, magnitude=20)
 metalearner.train(False, lr)
 results=metalearner.predict()
 print "Correct results (no contrast) : ",reduce(lambda x, y : int(x) +int(y), results )
