@@ -286,6 +286,12 @@ class MetaLearner:
 		self.matrix_contrasted=self.matrix.contrast_and_select_matrix(self.magnitude)
 		self.matrix_contrasted=np.array(self.matrix_contrasted).reshape(-1,len(self.matrix.get_features_selected_flat()))
 		
+	def get_cluster_numbers(self):
+		return self.matrix.get_clusters_number()
+	
+	def get_original_matrix_size(self):
+		return len(self.X_train) + len(self.X_test)
+	
 	def get_original_train(self):
 		'''
 		Get the original train data : data are not contrasted
@@ -406,7 +412,7 @@ class MetaLearner:
 		classes=self.get_classes()
 		if error_bool:
 			for idx in self.Y_error:
-				classes[idx+len(self.X_train)]=len(self.matrix.get_features_selected_flat())
+				classes[idx+len(self.X_train)]=len(self.matrix.get_clusters_number())
 		
 		# Plot the training points
 		fig = plt.figure(2, figsize=(8, 6))
@@ -423,6 +429,60 @@ class MetaLearner:
 			ax = Axes3D(fig, elev=-150, azim=110)
 			X_reduced = PCA(n_components=3).fit_transform(X)
 			ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=classes, cmap= plt.cm.get_cmap('RdYlBu'))
+			ax.set_title("First three PCA directions")
+			ax.set_xlabel("1st eigenvector")
+			ax.w_xaxis.set_ticklabels([])
+			ax.set_ylabel("2nd eigenvector")
+			ax.w_yaxis.set_ticklabels([])
+			ax.set_zlabel("3rd eigenvector")
+			ax.w_zaxis.set_ticklabels([])
+		
+		plt.show()
+		
+	def pca_dataset_errors_contrast(self):
+		'''
+		Allows to run data on the whole dataset
+		If error_bool is True, classification errors will be colored differently
+		'''
+		X=self.get_original_matrix()
+		classes=self.get_classes()
+		
+		#We add the errors with all the classes to compare the different values contrasted
+		for idx in self.Y_error:
+			for k in range(self.get_cluster_numbers()):
+				if k != classes[idx+len(self.X_train)]:
+					classes=np.append(classes, k)
+					vector=[]
+					vector.append(X[idx+len(self.X_train)])
+					X=np.array(np.append(X, vector)).reshape(-1,len(self.X_train[0,:]))
+		
+		X=self.matrix.contrast_and_select_features_matrix(X, classes, self.magnitude)
+		cpt_error=0
+		cpt=0
+		for idx in self.Y_error:
+			for k in range(self.get_cluster_numbers()):
+				if k != classes[idx+len(self.X_train)]:
+					print self.get_original_matrix_size()+cpt
+					classes[self.get_original_matrix_size()+cpt]=self.get_cluster_numbers() +cpt_error
+					cpt+=1
+			classes[idx+len(self.X_train)]=self.get_cluster_numbers() +cpt_error
+			cpt_error+=1
+		
+		# Plot the training points
+		fig = plt.figure(2, figsize=(8, 6))
+		X_reduced = PCA(n_components=2).fit_transform(X)
+		plt.scatter(X_reduced[:, 0], X_reduced[:, 1], c=classes, cmap= plt.cm.get_cmap('RdYlBu'), s=50)
+		plt.xlabel("1st eigenvector")
+		plt.ylabel("2nd eigenvector")
+		
+		if (len(self.matrix.get_features_selected_flat())>2):
+		
+			# To getter a better understanding of interaction of the dimensions
+			# plot the first three PCA dimensions
+			fig = plt.figure(1, figsize=(8, 6))
+			ax = Axes3D(fig, elev=-150, azim=110)
+			X_reduced = PCA(n_components=3).fit_transform(X)
+			ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=classes, cmap= plt.cm.get_cmap('RdYlBu'),s=50)
 			ax.set_title("First three PCA directions")
 			ax.set_xlabel("1st eigenvector")
 			ax.w_xaxis.set_ticklabels([])
