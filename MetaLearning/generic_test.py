@@ -40,12 +40,13 @@ classes1and2=classe1+classe2
 matrix_iris=matrix_iris[classes1and2]
 classes=classes[classes1and2] - 1
 
-metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.1, magnitude=3)
+metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.2, magnitude=10)
 metalearner.train(False, lr)
 results=metalearner.predict()
 print "Correct results (no contrast) : ",reduce(lambda x, y : int(x) +int(y), results )
 
+#metalearner=fm.MetaLearner(matrix_iris, classes, perct_test=0.2, magnitude=10)
 metalearner.train(True, lr)
-results=metalearner.predict()
+results=metalearner.predict_with_contrasted_class()
 print "Correct results (with contrast) : ", reduce(lambda x, y : int(x) +int(y), results )
-metalearner.pca_dataset_errors_contrast()
+metalearner.pca_dataset(True, True)

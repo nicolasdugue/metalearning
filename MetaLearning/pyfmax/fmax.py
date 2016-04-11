@@ -239,15 +239,6 @@ class MatrixClustered:
 		for i in range(self.get_rows_number()):
 			matrix.append(self.contrast_and_select_features(self.matrix_csr.getrow(i).toarray()[0], self.get_cluster_of(i), magnitude))
 		return matrix
-			
-	def contrast_a_vector(self, vector, k):
-		'''
-		Applies contrast to a data vector supposed to belong to cluster k
-		'''
-		new_vector=[]
-		for j in vector:
-			new_vector.append(self.contrast(j, k) * vector[j])
-		return new_vector
 
 	def __str__(self):
 		"""
@@ -274,6 +265,10 @@ class MetaLearner:
 		X the matrix of data, Y the classes
 		'''
 		self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(X, Y, test_size=perct_test)
+		self.Y_train=self.Y_train.astype(int)
+		self.Y_test=self.Y_test.astype(int)
+		print self.Y_test
+		
 		self.Y_error=[]
 		self.magnitude=magnitude
 		logger = logging.getLogger()
@@ -335,16 +330,36 @@ class MetaLearner:
 		'''
 		self.contrasted_bool=contrasted_bool
 		if not contrasted_bool:
-			self.classifier=classifier.fit(self.X_train, self.Y_train)
+			self.classifier=classifier.fit(self.get_original_train(), self.get_train_classes())
 		else:
-			self.classifier=classifier.fit(self.matrix_contrasted, self.Y_train)
+			self.classifier=classifier.fit(self.get_contrasted_train(), self.get_train_classes())
+	
+	def predict_with_contrasted_class(self):
+		'''
+		predict knowing class applying contrast : just to test the code
+		'''
+		self.Y_predicted=[]
+		self.Y_error=[]
+		for idx,vector in enumerate(self.X_test):
+			best=0
+			maxi=-1
+			vector_contrasted=self.matrix.contrast_and_select_features(vector, self.Y_test[idx], self.magnitude)
+			prediction=self.classifier.predict(vector_contrasted)
+			print prediction[0], self.Y_test[idx]
+			if prediction[0] != self.Y_test[idx]:
+				print self.classifier.predict_proba(vector)
+				print self.classifier.predict_proba(vector_contrasted)
+				self.Y_error.append(idx)
+			self.Y_predicted.append(prediction[0])
+			#print "\n"
+		return(self.Y_predicted == self.Y_test)
 	
 	def predict(self):
 		'''
 		predict results using the trained classifier with train function
 		'''
 		print ("Contrast : "+ str(self.contrasted_bool))
-		
+		self.Y_error=[]
 		if not self.contrasted_bool:
 			self.Y_predicted=self.classifier.predict(self.X_test)
 		else:
@@ -412,12 +427,12 @@ class MetaLearner:
 		classes=self.get_classes()
 		if error_bool:
 			for idx in self.Y_error:
-				classes[idx+len(self.X_train)]=len(self.matrix.get_clusters_number())
+				classes[idx+len(self.X_train)]=self.matrix.get_clusters_number()
 		
 		# Plot the training points
 		fig = plt.figure(2, figsize=(8, 6))
 		X_reduced = PCA(n_components=2).fit_transform(X)
-		plt.scatter(X_reduced[:, 0], X_reduced[:, 1], c=classes, cmap= plt.cm.get_cmap('RdYlBu'))
+		plt.scatter(X_reduced[:, 0], X_reduced[:, 1], c=classes, cmap= plt.cm.get_cmap('RdYlBu'), s=50)
 		plt.xlabel("1st eigenvector")
 		plt.ylabel("2nd eigenvector")
 		
@@ -428,7 +443,7 @@ class MetaLearner:
 			fig = plt.figure(1, figsize=(8, 6))
 			ax = Axes3D(fig, elev=-150, azim=110)
 			X_reduced = PCA(n_components=3).fit_transform(X)
-			ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=classes, cmap= plt.cm.get_cmap('RdYlBu'))
+			ax.scatter(X_reduced[:, 0], X_reduced[:, 1], X_reduced[:, 2], c=classes, cmap= plt.cm.get_cmap('RdYlBu'), s=50)
 			ax.set_title("First three PCA directions")
 			ax.set_xlabel("1st eigenvector")
 			ax.w_xaxis.set_ticklabels([])
