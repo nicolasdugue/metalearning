@@ -19,6 +19,7 @@ lr=LogisticRegression()
 norm=StandardScaler()
 
 matrix_iris=np.loadtxt("../data/iris/iris.data")
+print matrix_iris.shape
 classes=matrix_iris[:,4]
 matrix_iris=matrix_iris[:,0:3]
 matrix_iris=norm.fit_transform(matrix_iris)

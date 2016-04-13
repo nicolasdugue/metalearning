@@ -267,7 +267,7 @@ class MetaLearner:
 		self.X_train, self.X_test, self.Y_train, self.Y_test = train_test_split(X, Y, test_size=perct_test)
 		self.Y_train=self.Y_train.astype(int)
 		self.Y_test=self.Y_test.astype(int)
-		print self.Y_test
+		#print self.Y_test
 		
 		self.Y_error=[]
 		self.magnitude=magnitude
@@ -347,8 +347,6 @@ class MetaLearner:
 			prediction=self.classifier.predict(vector_contrasted)
 			print prediction[0], self.Y_test[idx]
 			if prediction[0] != self.Y_test[idx]:
-				print self.classifier.predict_proba(vector)
-				print self.classifier.predict_proba(vector_contrasted)
 				self.Y_error.append(idx)
 			self.Y_predicted.append(prediction[0])
 			#print "\n"
@@ -477,7 +475,7 @@ class MetaLearner:
 		for idx in self.Y_error:
 			for k in range(self.get_cluster_numbers()):
 				if k != classes[idx+len(self.X_train)]:
-					print self.get_original_matrix_size()+cpt
+					#print self.get_original_matrix_size()+cpt
 					classes[self.get_original_matrix_size()+cpt]=self.get_cluster_numbers() +cpt_error
 					cpt+=1
 			classes[idx+len(self.X_train)]=self.get_cluster_numbers() +cpt_error
